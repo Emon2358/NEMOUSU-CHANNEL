@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ねもうすちゃんねる</title>
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.1.0/firebase-database-compat.js"></script>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: Arial, sans-serif;
+        background-color: #333333;
+        color: white;
+      }
+
+      h1 {
+        text-align: center;
+      }
+
+      div {
+        text-align: center;
+        margin-top: 20px;
+      }
+
+      input[type="email"],
+      input[type="password"],
+      input[type="text"],
+      button {
+        display: block;
+        margin: 10px auto;
+        padding: 8px 12px;
+        font-size: 16px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        box-sizing: border-box;
+        background-color: #555555;
+        color: white;
+      }
+
+      button {
+        cursor: pointer;
+        background-color: #000000;
+        border: none;
+      }
+
+      button:hover {
+        background-color: #45a049;
+      }
+
+      .avatar {
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        margin-bottom: 10px;
+      }
+
+      .links a {
+        display: block;
+        color: white;
+        text-decoration: none;
+        padding: 10px 0;
+        font-size: 20px;
+      }
+
+      .links a:hover {
+        color: #45a049;
+      }
+
+      #image-container img {
+        max-width: 100%;
+        height: auto;
+        display: block;
+        margin: 20px auto;
+      }
+
+      #chat-container {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-size: cover;
+        background-position: center;
+        z-index: 1000;
+        padding: 20px;
+        overflow-y: auto;
+      }
+
+      #chat-messages {
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      .chat-bubble {
+        background-color: #555555;
+        border-radius: 10px;
+        padding: 10px;
+        margin: 10px 0;
+        display: flex;
+        align-items: center;
+      }
+
+      .chat-avatar {
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        margin-right: 10px;
+      }
+
+      .chat-message {
+        color: white;
+      }
+
+      #chat-input-container {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
+        padding: 20px;
+        background-color: rgba(0, 0, 0, 0.8);
+        display: flex;
+        justify-content: center;
+      }
+
+      #chat-input {
+        width: 80%;
+        padding: 10px;
+        font-size: 16px;
+        border-radius: 5px;
+        border: none;
+        margin-right: 10px;
+      }
+
+      #chat-send-button {
+        padding: 10px 20px;
+        font-size: 16px;
+        border-radius: 5px;
+        border: none;
+        background-color: #45a049;
+        color: white;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>ねもうすちゃんねる</h1>
+    <div id="signup-form">
+      <img
+        src="https://img.cdn.nimg.jp/s/comch/community-icon/original/co2078137/6958292.jpg/a1024x1024l_FFFFFFFF?key=0575093be80c5ceb2ee70857fd8de44b4b952eb081977aa51abb56e20b0f4905"
+        alt="avatar"
+        class="avatar"
+      />
+      <h2>サインアップ</h2>
+      <input type="email" id="signup-email" placeholder="Email" />
+      <input type="password" id="signup-password" placeholder="Password" />
+      <button id="signup-button">サインアップ</button>
+      <p>
+        アカウントを持っていますか？ <a href="#" id="show-login">ログイン</a>
+      </p>
+    </div>
+
+    <div id="login-form" style="display: none">
+      <img
+        src="https://img.cdn.nimg.jp/s/comch/community-icon/original/co2078137/6958292.jpg/a1024x1024l_FFFFFFFF?key=0575093be80c5ceb2ee70857fd8de44b4b952eb081977aa51abb56e20b0f4905"
+        alt="avatar"
+        class="avatar"
+      />
+      <h2>ログイン</h2>
+      <input type="email" id="login-email" placeholder="Email" />
+      <input type="password" id="login-password" placeholder="Password" />
+      <button id="login-button">ログイン</button>
+      <p>
+        まだアカウントをお持ちではありませんか？
+        <a href="#" id="show-signup">サインアップ</a>
+      </p>
+    </div>
+
+    <div id="username-form" style="display: none">
+      <img
+        src="https://img.cdn.nimg.jp/s/comch/community-icon/original/co2078137/6958292.jpg/a1024x1024l_FFFFFFFF?key=0575093be80c5ceb2ee70857fd8de44b4b952eb081977aa51abb56e20b0f4905"
+        alt="avatar"
+        class="avatar"
+      />
+      <h2>ユーザーネーム設定</h2>
+      <input type="text" id="username-input" placeholder="ユーザーネーム" />
+      <button id="set-username-button">設定</button>
+    </div>
+
+    <div id="logout-div" style="display: none">
+      <button id="logout-button">ログアウト</button>
+    </div>
+
+    <div id="links-div" class="links" style="display: none">
+      <a
+        href="#1"
+        id="chat-link"
+        data-bg="https://pbs.twimg.com/profile_banners/3239782022/1561389295/1080x360"
+        >総合雑談</a
+      >
+      <a
+        href="#2"
+        id="graveyard-link"
+        data-bg="https://t3.ftcdn.net/jpg/07/15/73/12/240_F_715731231_JmTdL2g9DGBCTLljtAHKMCK42mVtkXTk.jpg"
+        >ディスコ霊園</a
+      >
+      <a
+        href="#3"
+        id="meeting-link"
+        data-bg="https://pbs.twimg.com/profile_images/1605211372585091073/p5dJeg51_400x400.jpg"
+        >視聴会合</a
+      >
+    </div>
+
+    <div id="image-container" style="display: none">
+      <img
+        src="https://secure-dcdn.cdn.nimg.jp/nicochannel/material/design/2495712/7262139i.jpg"
+        alt="追加画像"
+      />
+    </div>
+
+    <div id="chat-container">
+      <div id="chat-messages"></div>
+      <div id="chat-input-container">
+        <input type="text" id="chat-input" placeholder="メッセージを入力..." />
+        <button id="chat-send-button">送信</button>
+      </div>
+    </div>
+
+    <audio id="message-sound">
+      <source src="message-sound.mp3" type="audio/mpeg" />
+      Your browser does not support the audio element.
+    </audio>
+
+    <script>
+      const firebaseConfig = {
+        apiKey: "AIzaSyC-vRKkPaG50imvk55tv91vj7GWNuXe004",
+        authDomain: "nemousu-636eb.firebaseapp.com",
+        projectId: "nemousu-636eb",
+        storageBucket: "nemousu-636eb.appspot.com",
+        messagingSenderId: "891021279714",
+        appId: "1:891021279714:web:c438fc1879e2311e8539bb",
+        measurementId: "G-2076VXPFC4",
+        databaseURL: "https://nemousu-636eb-default-rtdb.firebaseio.com",
+      };
+
+      firebase.initializeApp(firebaseConfig);
+      const auth = firebase.auth();
+      const database = firebase.database();
+
+      let currentRoom = "総合雑談"; // Default room
+
+      document.getElementById("signup-button").addEventListener("click", () => {
+        const email = document.getElementById("signup-email").value;
+        const password = document.getElementById("signup-password").value;
+
+        auth
+          .createUserWithEmailAndPassword(email, password)
+          .then((userCredential) => {
+            const user = userCredential.user;
+            console.log("User signed up:", user);
+            document.getElementById("signup-form").style.display = "none";
+            document.getElementById("username-form").style.display = "block";
+          })
+          .catch((error) => {
+            console.error("Error signing up:", error);
+          });
+      });
+
+      document
+        .getElementById("set-username-button")
+        .addEventListener("click", () => {
+          const username = document.getElementById("username-input").value;
+          const user = auth.currentUser;
+
+          if (username && user) {
+            database.ref("users/" + user.uid).set({
+              username: username,
+              avatar:
+                "https://img.cdn.nimg.jp/s/comch/community-icon/original/co2078137/6958292.jpg/a1024x1024l_FFFFFFFF?key=0575093be80c5ceb2ee70857fd8de44b4b952eb081977aa51abb56e20b0f4905",
+            });
+            document.getElementById("username-form").style.display = "none";
+            document.getElementById("login-form").style.display = "block";
+          }
+        });
+
+      document.getElementById("show-login").addEventListener("click", (e) => {
+        e.preventDefault();
+        document.getElementById("signup-form").style.display = "none";
+        document.getElementById("login-form").style.display = "block";
+      });
+
+      document.getElementById("show-signup").addEventListener("click", (e) => {
+        e.preventDefault();
+        document.getElementById("signup-form").style.display = "block";
+        document.getElementById("login-form").style.display = "none";
+      });
+
+      document.getElementById("login-button").addEventListener("click", () => {
+        const email = document.getElementById("login-email").value;
+        const password = document.getElementById("login-password").value;
+
+        auth
+          .signInWithEmailAndPassword(email, password)
+          .then((userCredential) => {
+            const user = userCredential.user;
+            console.log("User logged in:", user);
+            document.getElementById("login-form").style.display = "none";
+            document.getElementById("logout-div").style.display = "block";
+            document.getElementById("links-div").style.display = "block";
+            document.getElementById("image-container").style.display = "block";
+          })
+          .catch((error) => {
+            console.error("Error logging in:", error);
+          });
+      });
+
+      document.getElementById("logout-button").addEventListener("click", () => {
+        auth
+          .signOut()
+          .then(() => {
+            console.log("User signed out");
+            document.getElementById("signup-form").style.display = "block";
+            document.getElementById("login-form").style.display = "none";
+            document.getElementById("logout-div").style.display = "none";
+            document.getElementById("links-div").style.display = "none";
+            document.getElementById("image-container").style.display = "none";
+            document.getElementById("chat-container").style.display = "none";
+          })
+          .catch((error) => {
+            console.error("Error signing out:", error);
+          });
+      });
+
+      const chatLinks = document.querySelectorAll(".links a");
+      chatLinks.forEach((link) => {
+        link.addEventListener("click", (e) => {
+          e.preventDefault();
+          const bgUrl = link.getAttribute("data-bg");
+          currentRoom = link.textContent;
+          document.getElementById(
+            "chat-container"
+          ).style.backgroundImage = `url(${bgUrl})`;
+          document.getElementById("chat-container").style.display = "block";
+          loadChatMessages();
+        });
+      });
+
+      document
+        .getElementById("chat-send-button")
+        .addEventListener("click", () => {
+          const message = document.getElementById("chat-input").value;
+          const user = auth.currentUser;
+
+          if (message && user) {
+            const chatRef = database.ref("chats/" + currentRoom).push();
+            chatRef.set({
+              uid: user.uid,
+              message: message,
+              avatar:
+                "https://img.cdn.nimg.jp/s/comch/community-icon/original/co2078137/6958292.jpg/a1024x1024l_FFFFFFFF?key=0575093be80c5ceb2ee70857fd8de44b4b952eb081977aa51abb56e20b0f4905",
+              timestamp: firebase.database.ServerValue.TIMESTAMP,
+            });
+            document.getElementById("chat-input").value = "";
+            document.getElementById("message-sound").play(); // Add this line to play the
+            document.getElementById("message-sound").play(); // Add this line to play the sound
+          }
+        });
+
+      function loadChatMessages() {
+        const chatMessages = document.getElementById("chat-messages");
+        chatMessages.innerHTML = ""; // Clear previous messages
+
+        const chatRef = database.ref("chats/" + currentRoom);
+        chatRef.on("child_added", (snapshot) => {
+          const messageData = snapshot.val();
+          const chatBubble = document.createElement("div");
+          chatBubble.classList.add("chat-bubble");
+          const avatarImg = document.createElement("img");
+          avatarImg.src = messageData.avatar;
+          avatarImg.classList.add("chat-avatar");
+          chatBubble.appendChild(avatarImg);
+          const messageText = document.createElement("p");
+          messageText.classList.add("chat-message");
+          messageText.textContent = messageData.message;
+          chatBubble.appendChild(messageText);
+          chatMessages.appendChild(chatBubble);
+          chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll to bottom
+        });
+      }
+    </script>
+  </body>
+</html>
