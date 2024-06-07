@@ -14,8 +14,8 @@
         font-family: Arial, sans-serif;
         background-color: #333333;
         color: white;
-        height: 100vh; /* Add this line */
-        overflow: hidden; /* Add this line */
+        height: 100vh;
+        overflow: hidden;
       }
 
       h1 {
@@ -83,7 +83,7 @@
         position: fixed;
         top: 0;
         left: 0;
-        width: 100vw; /* Change width to viewport width */
+        width: 100vw;
         height: 100vh;
         background-size: cover;
         background-position: center;
@@ -96,7 +96,13 @@
         max-width: 600px;
         margin: 0 auto;
         display: flex;
-        flex-direction: column-reverse; /* Add this line */
+        flex-direction: column-reverse;
+      }
+
+      .chat-bubble {
+        display: flex;
+        align-items: center;
+        margin: 10px 0;
       }
 
       .chat-avatar {
@@ -108,8 +114,10 @@
 
       .chat-message {
         color: rgb(0, 0, 0);
+        border-radius: 10px;
+        padding: 10px;
+        max-width: 80%;
       }
-
 
       .user-uid {
         margin-left: 10px;
@@ -117,11 +125,18 @@
         color: #000000;
       }
 
+      .username {
+        margin-left: 10px;
+        font-size: 14px;
+        font-weight: bold;
+        color: #000000;
+      }
+
       #chat-input-container {
         position: fixed;
         bottom: 0;
         left: 0;
-        width: 100vw; /* Change width to viewport width */
+        width: 100vw;
         padding: 20px;
         background-color: rgba(0, 0, 0, 0.8);
         display: flex;
@@ -181,17 +196,6 @@
       </p>
     </div>
 
-    <div id="username-form" style="display: none">
-      <img
-        src="https://img.cdn.nimg.jp/s/comch/community-icon/original/co2078137/6958292.jpg/a1024x1024l_FFFFFFFF?key=0575093be80c5ceb2ee70857fd8de44b4b952eb081977aa51abb56e20b0f4905"
-        alt="avatar"
-        class="avatar"
-      />
-      <h2>ユーザーネーム設定</h2>
-      <input type="text" id="username-input" placeholder="ユーザーネーム" />
-      <button id="set-username-button">設定</button>
-    </div>
-
     <div id="logout-div" style="display: none">
       <button id="logout-button">ログアウト</button>
     </div>
@@ -227,7 +231,12 @@
     <div id="chat-container">
       <div id="chat-messages"></div>
       <div id="chat-input-container">
-        <input type="text" id="chat-input" placeholder="メッセージを入力..." />
+        <input
+          type="text"
+          id="chat-input"
+          placeholder="メッセージを入力..."
+          maxlength="100"
+        />
         <button id="chat-send-button">送信</button>
       </div>
     </div>
@@ -238,22 +247,39 @@
     </audio>
 
     <script>
+      // Firebase configuration
       const firebaseConfig = {
         apiKey: "AIzaSyC-vRKkPaG50imvk55tv91vj7GWNuXe004",
         authDomain: "nemousu-636eb.firebaseapp.com",
+        databaseURL: "https://nemousu-636eb-default-rtdb.firebaseio.com",
         projectId: "nemousu-636eb",
         storageBucket: "nemousu-636eb.appspot.com",
         messagingSenderId: "891021279714",
         appId: "1:891021279714:web:c438fc1879e2311e8539bb",
         measurementId: "G-2076VXPFC4",
-        databaseURL: "https://nemousu-636eb-default-rtdb.firebaseio.com",
       };
 
+      // Initialize Firebase
       firebase.initializeApp(firebaseConfig);
+
       const auth = firebase.auth();
       const database = firebase.database();
 
-      let currentRoom = "総合雑談"; // Default room
+      const signupForm = document.getElementById("signup-form");
+      const loginForm = document.getElementById("login-form");
+      const logoutDiv = document.getElementById("logout-div");
+      const linksDiv = document.getElementById("links-div");
+      const imageContainer = document.getElementById("image-container");
+
+      document.getElementById("show-login").addEventListener("click", () => {
+        signupForm.style.display = "none";
+        loginForm.style.display = "block";
+      });
+
+      document.getElementById("show-signup").addEventListener("click", () => {
+        signupForm.style.display = "block";
+        loginForm.style.display = "none";
+      });
 
       document.getElementById("signup-button").addEventListener("click", () => {
         const email = document.getElementById("signup-email").value;
@@ -263,42 +289,16 @@
           .createUserWithEmailAndPassword(email, password)
           .then((userCredential) => {
             const user = userCredential.user;
-            console.log("User signed up:", user);
-            document.getElementById("signup-form").style.display = "none";
-            document.getElementById("username-form").style.display = "block";
+            alert("サインアップ成功");
+            signupForm.style.display = "none";
+            logoutDiv.style.display = "block";
+            linksDiv.style.display = "block";
+            imageContainer.style.display = "block";
           })
           .catch((error) => {
-            console.error("Error signing up:", error);
+            console.error(error);
+            alert("サインアップ失敗");
           });
-      });
-
-      document
-        .getElementById("set-username-button")
-        .addEventListener("click", () => {
-          const username = document.getElementById("username-input").value;
-          const user = auth.currentUser;
-
-          if (username && user) {
-            database.ref("users/" + user.uid).set({
-              username: username,
-              avatar:
-                "https://img.cdn.nimg.jp/s/comch/community-icon/original/co2078137/6958292.jpg/a1024x1024l_FFFFFFFF?key=0575093be80c5ceb2ee70857fd8de44b4b952eb081977aa51abb56e20b0f4905",
-            });
-            document.getElementById("username-form").style.display = "none";
-            document.getElementById("login-form").style.display = "block";
-          }
-        });
-
-      document.getElementById("show-login").addEventListener("click", (e) => {
-        e.preventDefault();
-        document.getElementById("signup-form").style.display = "none";
-        document.getElementById("login-form").style.display = "block";
-      });
-
-      document.getElementById("show-signup").addEventListener("click", (e) => {
-        e.preventDefault();
-        document.getElementById("signup-form").style.display = "block";
-        document.getElementById("login-form").style.display = "none";
       });
 
       document.getElementById("login-button").addEventListener("click", () => {
@@ -309,14 +309,15 @@
           .signInWithEmailAndPassword(email, password)
           .then((userCredential) => {
             const user = userCredential.user;
-            console.log("User logged in:", user);
-            document.getElementById("login-form").style.display = "none";
-            document.getElementById("logout-div").style.display = "block";
-            document.getElementById("links-div").style.display = "block";
-            document.getElementById("image-container").style.display = "block";
+            alert("ログイン成功");
+            loginForm.style.display = "none";
+            logoutDiv.style.display = "block";
+            linksDiv.style.display = "block";
+            imageContainer.style.display = "block";
           })
           .catch((error) => {
-            console.error("Error logging in:", error);
+            console.error(error);
+            alert("ログイン失敗");
           });
       });
 
@@ -324,25 +325,22 @@
         auth
           .signOut()
           .then(() => {
-            console.log("User signed out");
-            document.getElementById("signup-form").style.display = "block";
-            document.getElementById("login-form").style.display = "none";
-            document.getElementById("logout-div").style.display = "none";
-            document.getElementById("links-div").style.display = "none";
-            document.getElementById("image-container").style.display = "none";
-            document.getElementById("chat-container").style.display = "none";
+            alert("ログアウト成功");
+            loginForm.style.display = "block";
+            logoutDiv.style.display = "none";
+            linksDiv.style.display = "none";
+            imageContainer.style.display = "none";
           })
           .catch((error) => {
-            console.error("Error signing out:", error);
+            console.error(error);
+            alert("ログアウト失敗");
           });
       });
 
-      const chatLinks = document.querySelectorAll(".links a");
-      chatLinks.forEach((link) => {
-        link.addEventListener("click", (e) => {
-          e.preventDefault();
+      document.querySelectorAll(".links a").forEach((link) => {
+        link.addEventListener("click", (event) => {
+          event.preventDefault();
           const bgUrl = link.getAttribute("data-bg");
-          currentRoom = link.textContent;
           document.getElementById(
             "chat-container"
           ).style.backgroundImage = `url(${bgUrl})`;
@@ -354,48 +352,77 @@
       document
         .getElementById("chat-send-button")
         .addEventListener("click", () => {
-          const message = document.getElementById("chat-input").value;
-          const user = auth.currentUser;
-
-          if (message && user) {
-            const chatRef = database.ref("chats/" + currentRoom).push();
-            chatRef.set({
-              uid: user.uid,
-              message: message,
-              avatar:
-                "https://img.cdn.nimg.jp/s/comch/community-icon/original/co2078137/6958292.jpg/a1024x1024l_FFFFFFFF?key=0575093be80c5ceb2ee70857fd8de44b4b952eb081977aa51abb56e20b0f4905",
-              timestamp: firebase.database.ServerValue.TIMESTAMP,
-            });
-            document.getElementById("chat-input").value = "";
-            document.getElementById("message-sound").play(); // Add this line to play the
-            document.getElementById("message-sound").play(); // Add this line to play the sound
-          }
+          sendMessage();
         });
+
+      function sendMessage() {
+        const messageInput = document.getElementById("chat-input");
+        const message = messageInput.value.trim();
+        if (message === "") return;
+
+        const user = auth.currentUser;
+        if (!user) {
+          alert("メッセージを送信するにはログインしてください");
+          return;
+        }
+
+        const newMessageRef = database.ref("messages").push();
+        newMessageRef.set({
+          uid: user.uid,
+          username: "加藤純一最強！！",
+          message: message,
+          timestamp: firebase.database.ServerValue.TIMESTAMP,
+        });
+
+        messageInput.value = "";
+      }
 
       function loadChatMessages() {
-        const chatMessages = document.getElementById("chat-messages");
-        chatMessages.innerHTML = ""; // Clear previous messages
+        const chatMessagesDiv = document.getElementById("chat-messages");
+        chatMessagesDiv.innerHTML = "";
 
-        const chatRef = database.ref("chats/" + currentRoom);
-        chatRef.on("child_added", (snapshot) => {
-          const messageData = snapshot.val();
-          const chatBubble = document.createElement("div");
-          chatBubble.classList.add("chat-bubble");
-          const avatarImg = document.createElement("img");
-          avatarImg.src = messageData.avatar;
-          avatarImg.classList.add("chat-avatar");
-          chatBubble.appendChild(avatarImg);
-          const messageText = document.createElement("p");
-          messageText.classList.add("chat-message");
-          messageText.textContent = messageData.message;
-          const uidText = document.createElement("span");
-          uidText.classList.add("user-uid");
-          uidText.textContent = messageData.uid;
-          messageText.appendChild(uidText); // Append UID to message
-          chatBubble.appendChild(messageText);
-          chatMessages.appendChild(chatBubble);
-          chatMessages.scrollTop = chatMessages.scrollHeight; // Auto-scroll to bottom
-        });
+        database
+          .ref("messages")
+          .orderByChild("timestamp")
+          .limitToLast(100)
+          .on("child_added", (snapshot) => {
+            const messageData = snapshot.val();
+            const messageDiv = document.createElement("div");
+            messageDiv.classList.add("chat-bubble");
+
+            const avatarImg = document.createElement("img");
+            avatarImg.classList.add("chat-avatar");
+            avatarImg.src =
+              "https://img.cdn.nimg.jp/s/comch/community-icon/original/co2078137/6958292.jpg/a1024x1024l_FFFFFFFF?key=0575093be80c5ceb2ee70857fd8de44b4b952eb081977aa51abb56e20b0f4905";
+
+            const messageContentDiv = document.createElement("div");
+            messageContentDiv.classList.add("chat-message");
+            messageContentDiv.textContent = messageData.message;
+
+            const usernameDiv = document.createElement("div");
+            usernameDiv.classList.add("username");
+            usernameDiv.textContent = messageData.username;
+
+            const uidDiv = document.createElement("div");
+            uidDiv.classList.add("user-uid");
+            uidDiv.textContent = messageData.uid;
+
+            messageDiv.appendChild(avatarImg);
+            messageDiv.appendChild(messageContentDiv);
+            messageDiv.appendChild(usernameDiv);
+            messageDiv.appendChild(uidDiv);
+
+            chatMessagesDiv.appendChild(messageDiv);
+            playMessageSound();
+
+            // Scroll to the latest message
+            chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
+          });
+      }
+
+      function playMessageSound() {
+        const messageSound = document.getElementById("message-sound");
+        messageSound.play().catch((error) => console.error(error));
       }
     </script>
   </body>
